@@ -5,6 +5,7 @@ from sqlalchemy import select
 from fastapi import HTTPException
 from src.models.run import Run
 from src.models.review import Review
+from src.models.transfer import ResearchTransfer
 from src.services import studies
 from src.services.domain_validation import validate_parameters
 from src.services.audits import log
@@ -24,16 +25,17 @@ def create(db,data,user):
 
 def get(db,id):
     run=db.get(Run,id)
-    if not run: raise HTTPException(404,'运行不存在')
+    if not run or not run.visible: raise HTTPException(404,'运行不存在')
     result=record(run);review=db.scalar(select(Review).where(Review.run_id==id));result['review']=record(review) if review else None
+    result['imported']=db.scalar(select(ResearchTransfer.id).where(ResearchTransfer.local_run_id==id)) is not None
     return result
 
 def list_runs(db):
-    return [get(db,x) for x in db.scalars(select(Run.id).order_by(Run.id.desc()))]
+    return [get(db,x) for x in db.scalars(select(Run.id).where(Run.visible==True).order_by(Run.id.desc()))]
 
 def approve(db,id,data,user):
     run=db.get(Run,id)
-    if not run: raise HTTPException(404,'运行不存在')
+    if not run or not run.visible: raise HTTPException(404,'运行不存在')
     if run.status!='completed': raise HTTPException(409,'只能复核已完成运行')
     if db.scalar(select(Review).where(Review.run_id==id)): raise HTTPException(409,'已复核，记录不可覆盖')
     obj=Review(run_id=id,note=data.note,author=user.email,created_at=now());db.add(obj);log(db,user,'review.approve',f'{id}: {data.note}');db.commit();return record(obj)

@@ -32,6 +32,9 @@ services:
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: ${JWT_SECRET:-local-demo-tea-quantiles-replace-for-production}
       SEED_DEMO: ${SEED_DEMO:-true}
+      # Each independent working seat sets its own stable identity so packages
+      # can never be confused with research created locally.
+      WORKSPACE_INSTANCE_ID: ${WORKSPACE_INSTANCE_ID:-ws-tea-quantiles-default}
     ports: ["${BACKEND_PORT:-19240}:8000"]
     volumes: ["run-artifacts:/app/artifacts"]
     depends_on:

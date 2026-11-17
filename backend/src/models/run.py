@@ -1,4 +1,4 @@
-from sqlalchemy import Column,Integer,String,JSON,Text,ForeignKey
+from sqlalchemy import Column,Integer,String,JSON,Text,ForeignKey,Boolean
 from src.config.database import Base
 class DistributionRun(Base):
     __tablename__='runs'
@@ -12,4 +12,6 @@ class DistributionRun(Base):
     result=Column(JSON,nullable=True)
     error=Column(Text,default='')
     created_at=Column(String(40),nullable=False)
+    # Imported runs stay hidden until the database row and archive are both in place.
+    visible=Column(Boolean,default=True,nullable=False)
 Run=DistributionRun

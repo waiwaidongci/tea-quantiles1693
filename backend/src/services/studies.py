@@ -8,7 +8,7 @@ from src.utils.serializers import record
 
 def list_studies(db):
     data=[]
-    for s in db.scalars(select(Study).order_by(Study.id)):
+    for s in db.scalars(select(Study).where(Study.visible==True).order_by(Study.id)):
         x=record(s);x['row_count']=db.scalar(select(func.count()).select_from(Observation).where(Observation.study_id==s.id));data.append(x)
     return data
 
@@ -18,7 +18,7 @@ def create(db,data,user):
 
 def require(db,id):
     s=db.get(Study,id)
-    if not s: raise HTTPException(404,'业务批次不存在')
+    if not s or not s.visible: raise HTTPException(404,'业务批次不存在')
     return s
 
 def observations(db,id):

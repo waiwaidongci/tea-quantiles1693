@@ -12,6 +12,7 @@
 - 分位数、ECDF与按批bootstrap中位数区间。中位数置信区间描述估计不确定性，不是下一份茶样的预测区间。
 - 每次运行冻结参数、观测和SHA256。Redis任务由独立worker计算，写DB与共享产物卷；输入修改不会改写历史结果。
 - 负责人复核不可覆盖；审计记录登录、数据改动、排队、复核与导出；240请求/分钟限流、全局可恢复错误。
+- 可迁移研究包：结果档案页与研究迁移页可把已完成研究打包为 ZIP，内含来源批次、冻结观测、参数、结果、共享留档附件与复核依据。接收端逐项校验清单、大小、SHA256、字段、关联与复算，缺件、多余条目或任一篡改整包拒收。导入先在本地建隐藏记录并落库，再写留档包、接收凭据与结果附件，全部成功后才可见；中断可重试恢复，恢复不删除既有研究，重试与并发上传同一包只建一次研究。来源批次/运行编号与本地编号互不覆盖；同一来源编号内容不同拒绝混合。包内批准仅作依据展示，不生成接收端本地复核。
 
 ## 快速启动
 ```bash
@@ -36,6 +37,7 @@ docker compose exec -T backend python -m scripts.seed_demo
 6. 09:25 阅读核心数值、方法边界、明细与SHA256；发现失败先修数据重跑。
 7. 09:35 admin打开业务复核，写明限制与下一步动作，归档后不可覆盖。
 8. 09:40 viewer读取复核意见并下载CSV，在操作留痕页核对下载事件。
+9. 10:10 analyst在结果档案页下载研究包；另一独立工作席的analyst在研究迁移页上传，查看逐项核验结果与本地新编号；负责人按本地流程单独复核。
 
 ## 技术与目录
 |部分|实现|
@@ -48,7 +50,7 @@ docker compose exec -T backend python -m scripts.seed_demo
 
 `frontend/src/`分api、stores、types、components/common、hooks、pages、router、utils、constants；`backend/src/`分config、models、schemas、services、controllers、routes、middlewares、utils、constants；`backend/scripts/seed_demo.py`自然键插入、重复不覆盖修改；`backend/migrations/README.md`说明schema版本。
 
-环境变量 `.env.example`：COMPOSE_PROJECT_NAME、FRONTEND_PORT、BACKEND_PORT、DB_PORT、DB_PASSWORD、JWT_SECRET、SEED_DEMO。开发时在本地venv安装backend/requirements.txt，设置DATABASE_URL、REDIS_URL、JWT_SECRET再运行uvicorn；前端开发经Nginx代理 `/api/` 到不带前缀的API。
+环境变量 `.env.example`：COMPOSE_PROJECT_NAME、FRONTEND_PORT、BACKEND_PORT、DB_PORT、DB_PASSWORD、JWT_SECRET、SEED_DEMO、WORKSPACE_INSTANCE_ID。每个独立工作席设置自己的 `WORKSPACE_INSTANCE_ID`（未设置时自动生成并持久化）；`ARTIFACT_ROOT` 可选，默认 `/app/artifacts`。开发时在本地venv安装backend/requirements.txt，设置DATABASE_URL、REDIS_URL、JWT_SECRET再运行uvicorn；前端开发经Nginx代理 `/api/` 到不带前缀的API。
 
 共享枚举：角色admin/analyst/viewer和队列queued/running/completed/failed；后端`src/constants/enums.py`、认证与worker使用相同值；前端`src/types/enums.js`、状态与角色界面使用相同值。Google Fonts：Noto Serif SC + IBM Plex Mono；断网使用serif/monospace回退。
 
